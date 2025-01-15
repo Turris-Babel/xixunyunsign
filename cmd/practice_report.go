@@ -15,28 +15,6 @@ import (
 	"xixunyunsign/utils"
 )
 
-type RequestPayload struct {
-	Contents []Content `json:"contents"`
-}
-type Response struct {
-	Candidates    []Candidate `json:"candidates"`
-	UsageMetadata interface{} `json:"usageMetadata"` // 根据需要定义具体类型
-	ModelVersion  string      `json:"modelVersion"`
-}
-type Candidate struct {
-	Content      Content `json:"content"`
-	FinishReason string  `json:"finishReason"`
-	AvgLogprobs  float64 `json:"avgLogprobs"`
-}
-
-type Content struct {
-	Parts []ContentPart `json:"parts"`
-	Role  string        `json:"role"`
-}
-type ContentPart struct {
-	Text string `json:"text"`
-}
-
 var (
 	filePath     string
 	role         string
@@ -48,6 +26,7 @@ var (
 	apiKey       string
 )
 
+var u UserInfo
 var ExperimentalCmd = &cobra.Command{
 	Use:   "experimental",
 	Short: "实验性命令(自动月报)",
@@ -63,7 +42,7 @@ var ExperimentalCmd = &cobra.Command{
 }
 
 func init() {
-	ExperimentalCmd.Flags().StringVarP(&account, "account", "a", "", "账号")
+	ExperimentalCmd.Flags().StringVarP(&u.account, "account", "a", "", "账号")
 	ExperimentalCmd.Flags().StringVarP(&filePath, "filePath", "f", "", "文件地址")
 	ExperimentalCmd.Flags().StringVarP(&role, "role", "r", "", "工作角色")
 	ExperimentalCmd.Flags().Int8VarP(&month, "month", "M", 1, "第几月（默认为1）")
@@ -192,9 +171,9 @@ func MonthReportUploadSelectFile(filePath, UserToken string) string {
 }
 
 func UploadImages(filePath string) string {
-	token, _, _, err := utils.GetUser(account)
+	token, _, _, err := utils.GetUser(u.account)
 	if err != nil || token == "" {
-		if debug {
+		if Config.debug {
 			fmt.Printf("获取用户信息失败: %v\n", err)
 		}
 		fmt.Println("未找到该账号的 token，请先登录。")
@@ -280,9 +259,9 @@ func GenerateContent(role, apiKey string) (string, error) {
 }
 
 func ReportsMonth(businessType, startDate, endDate, content, attachment string) {
-	token, _, _, err := utils.GetUser(account)
+	token, _, _, err := utils.GetUser(u.account)
 	if err != nil || token == "" {
-		if debug {
+		if Config.debug {
 			fmt.Printf("获取用户信息失败: %v\n", err)
 		}
 		fmt.Println("未找到该账号的 token，请先登录。")

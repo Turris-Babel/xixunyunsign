@@ -33,7 +33,7 @@ var SchoolSearchIDCmd = &cobra.Command{
 		}
 
 		// 调用查询函数
-		searchSchoolID(schoolName)
+		SearchSchoolID(schoolName)
 	},
 }
 
@@ -43,12 +43,12 @@ func init() {
 	SchoolSearchIDCmd.MarkFlagRequired("school_name")
 }
 
-func searchSchoolID(schoolName string) {
+func SearchSchoolID(schoolName string) (string, error) {
 	// 调用utils中的查询函数，模糊匹配学校名称
 	schools, err := utils.SearchSchoolID(schoolName)
 	if err != nil {
 		fmt.Println("查询时发生错误:", err)
-		return
+		return "", nil
 	}
 
 	if len(schools) == 0 {
@@ -57,6 +57,8 @@ func searchSchoolID(schoolName string) {
 		// 输出所有匹配的学校
 		for _, school := range schools {
 			fmt.Printf("学校名称: %s 对应的学校ID是: %s\n", school.SchoolName, school.SchoolID)
+			return school.SchoolID, nil
 		}
 	}
+	return "", nil
 }

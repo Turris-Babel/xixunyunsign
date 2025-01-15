@@ -20,38 +20,28 @@ import (
 	"xixunyunsign/utils"
 )
 
-var (
-	address      string
-	address_name string
-	latitude     string
-	longitude    string
-	remark       string
-	comment      string
-	province     string
-	city         string
-	debug        bool // 添加 debug 标志
-)
+var Config signconfig
 
 // SignCmd 定义签到命令
 var SignCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "执行签到",
 	Run: func(cmd *cobra.Command, args []string) {
-		signIn()
+		SignIn(u.token)
 	},
 }
 
 func init() {
-	SignCmd.Flags().StringVarP(&account, "account", "a", "", "账号")
-	SignCmd.Flags().StringVarP(&address, "address", "", "", "地址(具体名称_小字部分)")
-	SignCmd.Flags().StringVarP(&address_name, "address_name", "", "", "地址名称")
-	SignCmd.Flags().StringVarP(&latitude, "latitude", "", "", "纬度")
-	SignCmd.Flags().StringVarP(&longitude, "longitude", "", "", "经度")
-	SignCmd.Flags().StringVarP(&remark, "remark", "", "0", "备注")
-	SignCmd.Flags().StringVarP(&comment, "comment", "", "", "评论")
-	SignCmd.Flags().StringVarP(&province, "province", "p", "", "省份")
-	SignCmd.Flags().StringVarP(&city, "city", "c", "", "城市")
-	SignCmd.Flags().BoolVarP(&debug, "debug", "d", false, "启用调试模式") // 添加 debug 标志
+	SignCmd.Flags().StringVarP(&u.account, "account", "a", "", "账号")
+	SignCmd.Flags().StringVarP(&Config.address, "address", "", "", "地址(具体名称_小字部分)")
+	SignCmd.Flags().StringVarP(&Config.address_name, "address_name", "", "", "地址名称")
+	SignCmd.Flags().StringVarP(&Config.latitude, "latitude", "", "", "纬度")
+	SignCmd.Flags().StringVarP(&Config.longitude, "longitude", "", "", "经度")
+	SignCmd.Flags().StringVarP(&Config.remark, "remark", "", "0", "备注")
+	SignCmd.Flags().StringVarP(&Config.comment, "comment", "", "", "评论")
+	SignCmd.Flags().StringVarP(&Config.province, "province", "p", "", "省份")
+	SignCmd.Flags().StringVarP(&Config.city, "city", "c", "", "城市")
+	SignCmd.Flags().BoolVarP(&Config.debug, "debug", "d", false, "启用调试模式") // 添加 debug 标志
 	SignCmd.Flags().StringVarP(&secret_key, "secret_key", "k", "", "server酱密钥")
 
 	// 标记必需的标志
@@ -60,83 +50,83 @@ func init() {
 }
 
 // signIn 执行签到逻辑
-func signIn() {
+func SignIn(token string) bool {
 	// 获取用户信息
-	token, dbLatitude, dbLongitude, err := utils.GetUser(account)
+	token, dbLatitude, dbLongitude, err := utils.GetUser(u.account)
 	if err != nil || token == "" {
-		if debug {
+		if Config.debug {
 			fmt.Printf("获取用户信息失败: %v\n", err)
 		}
 		fmt.Println("未找到该账号的 token，请先登录。")
-		return
+		return false
 	}
 
 	// 如果命令行未提供 latitude 和 longitude，则使用数据库中的值
-	if latitude == "" {
-		latitude = dbLatitude
+	if Config.latitude == "" {
+		Config.latitude = dbLatitude
 	}
-	if longitude == "" {
-		longitude = dbLongitude
+	if Config.longitude == "" {
+		Config.longitude = dbLongitude
 	}
 
-	if latitude == "" || longitude == "" {
+	if Config.latitude == "" || Config.longitude == "" {
 		fmt.Println("未提供经纬度信息，且数据库中不存在，请先查询签到信息或手动提供经纬度。")
-		return
+		return false
 	}
 
 	// 使用公钥加密 latitude 和 longitude
-	encryptedLatitude, err := rsaEncrypt([]byte(latitude))
+	encryptedLatitude, err := rsaEncrypt([]byte(Config.latitude))
 	if err != nil {
-		if debug {
+		if Config.debug {
 			fmt.Printf("加密纬度失败: %v\n", err)
 		}
 		fmt.Println("加密纬度失败:", err)
-		return
+		return false
 	}
 
-	encryptedLongitude, err := rsaEncrypt([]byte(longitude))
+	encryptedLongitude, err := rsaEncrypt([]byte(Config.longitude))
 	if err != nil {
-		if debug {
+		if Config.debug {
 			fmt.Printf("加密经度失败: %v\n", err)
 		}
 		fmt.Println("加密经度失败:", err)
-		return
+		return false
 	}
 
 	// 从 address 提取 province 和 city
-	if address != "" {
-		extractedProvince, extractedCity, err := extractProvinceAndCity(address)
+	if Config.address != "" {
+		extractedProvince, extractedCity, err := extractProvinceAndCity(Config.address)
 		if err != nil {
-			if debug {
+			if Config.debug {
 				fmt.Printf("提取省份和城市失败: %v\n", err)
 			}
 			fmt.Println("地址格式不正确，无法提取省份和城市:", err)
-			return
+			return false
 		}
-		province = extractedProvince
-		city = extractedCity
+		Config.province = extractedProvince
+		Config.city = extractedCity
 	}
 
 	apiURL := "https://api.xixunyun.com/signin_rsa"
 
 	data := url.Values{}
-	data.Set("address", address)
-	data.Set("province", province)
-	data.Set("city", city)
+	data.Set("address", Config.address)
+	data.Set("province", Config.province)
+	data.Set("city", Config.city)
 	data.Set("latitude", encryptedLatitude)
 	data.Set("longitude", encryptedLongitude)
-	data.Set("remark", remark)
-	data.Set("comment", comment)
-	data.Set("address_name", address_name)
+	data.Set("remark", Config.remark)
+	data.Set("comment", Config.comment)
+	data.Set("address_name", Config.address_name)
 	data.Set("change_sign_resource", "0")
 
 	req, err := http.NewRequest("POST", apiURL, strings.NewReader(data.Encode()))
 	if err != nil {
-		if debug {
+		if Config.debug {
 			fmt.Printf("创建请求失败: %v\n", err)
 		}
 		fmt.Println("创建请求失败:", err)
-		return
+		return false
 	}
 
 	query := req.URL.Query()
@@ -146,7 +136,7 @@ func signIn() {
 	query.Add("platform", "android")
 	query.Add("entrance_year", "0")
 	query.Add("graduate_year", "0")
-	query.Add("school_id", school_id) // 确保 school_id 已正确获取
+	query.Add("school_id", u.schoolID) // 确保 school_id 已正确获取
 	req.URL.RawQuery = query.Encode()
 
 	req.Header.Set("User-Agent", "okhttp/3.8.0")
@@ -157,24 +147,24 @@ func signIn() {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		if debug {
+		if Config.debug {
 			fmt.Printf("发送 HTTP 请求失败: %v\n", err)
 		}
 		fmt.Println("请求失败:", err)
-		return
+		return false
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		if debug {
+		if Config.debug {
 			fmt.Printf("读取响应体失败: %v\n", err)
 		}
 		fmt.Println("读取响应体失败:", err)
-		return
+		return false
 	}
 
-	if debug {
+	if Config.debug {
 		fmt.Printf("响应状态码: %d\n", resp.StatusCode)
 		fmt.Printf("响应体: %s\n", string(body))
 	}
@@ -182,16 +172,16 @@ func signIn() {
 	var result map[string]interface{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		if debug {
+		if Config.debug {
 			fmt.Printf("解析 JSON 失败: %v\n", err)
 		}
 		fmt.Println("解析响应数据失败:", err)
-		return
+		return false
 	}
 
 	// 检查响应码是否为 20000
 	if code, ok := result["code"].(float64); !ok || code != 20000 {
-		if debug {
+		if Config.debug {
 			fmt.Printf("签到失败，响应内容: %v\n", result)
 		}
 		fmt.Println("签到失败:", result["message"])
@@ -202,18 +192,19 @@ func signIn() {
 			}
 			PushMsgToWechat("签到失败", result["message"].(string)+"\r\n"+"错误详细信息："+string(resultStr), "9", secret_key)
 		}
-		return
+		return false
 	}
 
 	fmt.Println("签到成功！")
 
 	if secret_key != "" {
-		latitude, longitude, err = utils.GetCoordinates(account)
+		Config.latitude, Config.longitude, err = utils.GetCoordinates(u.account)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		PushMsgToWechat("签到成功", result["message"].(string)+"\n签到地址（使用高德地图查询）为"+latitude+"\n"+longitude, "9", secret_key)
+		PushMsgToWechat("签到成功", result["message"].(string)+"\n签到地址（使用高德地图查询）为"+Config.latitude+"\n"+Config.longitude, "9", secret_key)
 	}
+	return true
 }
 
 // rsaEncrypt 使用提供的公钥对数据进行加密

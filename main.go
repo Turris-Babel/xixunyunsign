@@ -5,6 +5,7 @@ import (
 	"log"
 	"xixunyunsign/cmd"
 	"xixunyunsign/utils"
+	"xixunyunsign/web"
 )
 
 func main() {
@@ -22,11 +23,17 @@ func main() {
 
 	// 设置根命令
 	var rootCmd = &cobra.Command{Use: "xixun"}
-	rootCmd.AddCommand(cmd.LoginCmd)
-	rootCmd.AddCommand(cmd.QueryCmd)
-	rootCmd.AddCommand(cmd.SignCmd)
-	rootCmd.AddCommand(cmd.SchoolSearchIDCmd)
-	rootCmd.AddCommand(cmd.ExperimentalCmd)
+	var ServeCmd = &cobra.Command{
+		Use:   "serve",
+		Short: "启动Web服务器",
+		Run: func(cmd *cobra.Command, args []string) {
+			server := web.NewServer()
+			server.Run(":8080") // 可以通过参数或配置文件指定端口
+		},
+	}
+	rootCmd.AddCommand(cmd.LoginCmd, cmd.QueryCmd, cmd.SignCmd, cmd.SchoolSearchIDCmd, cmd.ExperimentalCmd)
+	rootCmd.AddCommand(ServeCmd)
+	//rootCmd.CompletionOptions.DisableDefaultCmd = false
 	//rootCmd.AddCommand(cmd.ScheduleCmd) // 添加 schedule 命令
 	//// 设置优雅关闭信号
 	//stopChan := make(chan os.Signal, 1)
@@ -49,5 +56,8 @@ func main() {
 	//<-ctx.Done()
 	//log.Println("调度器已停止，程序退出")
 	// 执行根命令
-	rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
+
 }
