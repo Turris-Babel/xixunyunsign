@@ -16,7 +16,7 @@ type LoginRequest struct {
 	Account  string `json:"account" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	SchoolID string `json:"school_id" binding:"required"`
-	//Token    string `json:"token" binding:"required"`
+	Token    string `json:"token"   // binding:"required"`
 }
 
 // LoginResponse represents the login response payload
@@ -118,7 +118,7 @@ func handleSign(c *gin.Context) {
 	}
 
 	// 调用cmd包中的签到逻辑
-	success := cmd.SignIn(req.Account)
+	success := cmd.SignIn(req.Account, req.Address, req.AddressName, req.Latitude, req.Longitude)
 	//if success == false {
 	//	c.JSON(http.StatusInternalServerError, SignResponse{
 	//		Message: "签到失败",
@@ -126,7 +126,7 @@ func handleSign(c *gin.Context) {
 	//	})
 	//	return
 	//}
-	if success {
+	if success == "签到成功" {
 		c.JSON(http.StatusOK, SignResponse{
 			Message: "签到成功",
 		})

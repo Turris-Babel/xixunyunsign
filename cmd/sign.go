@@ -27,7 +27,7 @@ var SignCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "执行签到",
 	Run: func(cmd *cobra.Command, args []string) {
-		SignIn(u.token)
+		SignIn(u.account, Config.address, Config.address_name, Config.latitude, Config.longitude)
 	},
 }
 
@@ -50,28 +50,30 @@ func init() {
 }
 
 // signIn 执行签到逻辑
-func SignIn(token string) bool {
+func SignIn(account, address, address_name, latitude, longitude string) string {
 	// 获取用户信息
-	token, dbLatitude, dbLongitude, err := utils.GetUser(u.account)
+	token, dbLatitude, dbLongitude, err := utils.GetUser(account)
 	if err != nil || token == "" {
 		if Config.debug {
 			fmt.Printf("获取用户信息失败: %v\n", err)
 		}
 		fmt.Println("未找到该账号的 token，请先登录。")
-		return false
+		return "未找到该账号的 token，请先登录。"
 	}
 
 	// 如果命令行未提供 latitude 和 longitude，则使用数据库中的值
-	if Config.latitude == "" {
+	if latitude == "" {
 		Config.latitude = dbLatitude
+		latitude = Config.latitude
 	}
-	if Config.longitude == "" {
+	if longitude == "" {
 		Config.longitude = dbLongitude
+		longitude = Config.longitude
 	}
 
 	if Config.latitude == "" || Config.longitude == "" {
 		fmt.Println("未提供经纬度信息，且数据库中不存在，请先查询签到信息或手动提供经纬度。")
-		return false
+		return "未提供经纬度信息，且数据库中不存在，请先查询签到信息或手动提供经纬度。"
 	}
 
 	// 使用公钥加密 latitude 和 longitude
@@ -81,7 +83,7 @@ func SignIn(token string) bool {
 			fmt.Printf("加密纬度失败: %v\n", err)
 		}
 		fmt.Println("加密纬度失败:", err)
-		return false
+		return "加密纬度失败"
 	}
 
 	encryptedLongitude, err := rsaEncrypt([]byte(Config.longitude))
@@ -90,18 +92,18 @@ func SignIn(token string) bool {
 			fmt.Printf("加密经度失败: %v\n", err)
 		}
 		fmt.Println("加密经度失败:", err)
-		return false
+		return "加密经度失败"
 	}
-
+	Config.address = address
 	// 从 address 提取 province 和 city
-	if Config.address != "" {
+	if address != "" {
 		extractedProvince, extractedCity, err := extractProvinceAndCity(Config.address)
 		if err != nil {
 			if Config.debug {
 				fmt.Printf("提取省份和城市失败: %v\n", err)
 			}
 			fmt.Println("地址格式不正确，无法提取省份和城市:", err)
-			return false
+			return "地址格式不正确，无法提取省份和城市"
 		}
 		Config.province = extractedProvince
 		Config.city = extractedCity
@@ -117,7 +119,7 @@ func SignIn(token string) bool {
 	data.Set("longitude", encryptedLongitude)
 	data.Set("remark", Config.remark)
 	data.Set("comment", Config.comment)
-	data.Set("address_name", Config.address_name)
+	data.Set("address_name", address_name)
 	data.Set("change_sign_resource", "0")
 
 	req, err := http.NewRequest("POST", apiURL, strings.NewReader(data.Encode()))
@@ -126,7 +128,7 @@ func SignIn(token string) bool {
 			fmt.Printf("创建请求失败: %v\n", err)
 		}
 		fmt.Println("创建请求失败:", err)
-		return false
+		return "创建请求失败"
 	}
 
 	query := req.URL.Query()
@@ -151,7 +153,7 @@ func SignIn(token string) bool {
 			fmt.Printf("发送 HTTP 请求失败: %v\n", err)
 		}
 		fmt.Println("请求失败:", err)
-		return false
+		return "请求失败"
 	}
 	defer resp.Body.Close()
 
@@ -161,7 +163,7 @@ func SignIn(token string) bool {
 			fmt.Printf("读取响应体失败: %v\n", err)
 		}
 		fmt.Println("读取响应体失败:", err)
-		return false
+		return "读取响应体失败"
 	}
 
 	if Config.debug {
@@ -176,7 +178,7 @@ func SignIn(token string) bool {
 			fmt.Printf("解析 JSON 失败: %v\n", err)
 		}
 		fmt.Println("解析响应数据失败:", err)
-		return false
+		return "解析响应数据失败"
 	}
 
 	// 检查响应码是否为 20000
@@ -192,7 +194,7 @@ func SignIn(token string) bool {
 			}
 			PushMsgToWechat("签到失败", result["message"].(string)+"\r\n"+"错误详细信息："+string(resultStr), "9", secret_key)
 		}
-		return false
+		return fmt.Sprintf("签到失败+%s", result["message"].(string))
 	}
 
 	fmt.Println("签到成功！")
@@ -204,7 +206,7 @@ func SignIn(token string) bool {
 		}
 		PushMsgToWechat("签到成功", result["message"].(string)+"\n签到地址（使用高德地图查询）为"+Config.latitude+"\n"+Config.longitude, "9", secret_key)
 	}
-	return true
+	return "签到成功"
 }
 
 // rsaEncrypt 使用提供的公钥对数据进行加密
