@@ -2,7 +2,6 @@
 package web
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"xixunyunsign/cmd"
@@ -147,6 +146,7 @@ type SearchSchoolResponse struct {
 
 // handleSearchSchoolID processes the search school ID request
 func handleSearchSchoolID(c *gin.Context) {
+	// 获取查询参数
 	schoolName := c.Query("school_name")
 	if schoolName == "" {
 		c.JSON(http.StatusBadRequest, SearchSchoolResponse{
@@ -155,21 +155,11 @@ func handleSearchSchoolID(c *gin.Context) {
 		return
 	}
 
-	// 调用 cmd 包中的查询学校 ID 逻辑
-	rawData, err := cmd.SearchSchoolID(schoolName)
+	// 调用 cmd 包中的查询学校信息逻辑
+	schools, err := cmd.SearchSchoolID(schoolName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, SearchSchoolResponse{
 			Message: "查询失败",
-			Error:   err.Error(),
-		})
-		return
-	}
-
-	// 解析 JSON 字符串为 []utils.SchoolInfo
-	var schools []utils.SchoolInfo
-	if err := json.Unmarshal([]byte(rawData), &schools); err != nil {
-		c.JSON(http.StatusInternalServerError, SearchSchoolResponse{
-			Message: "数据解析失败",
 			Error:   err.Error(),
 		})
 		return
