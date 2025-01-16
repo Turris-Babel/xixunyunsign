@@ -2,13 +2,16 @@
 
 [自动签到看这里](scheduler.md)
 
+[serve子命令签到api详解](docs/webapi.md)
+
 ![License](https://img.shields.io/github/license/theshdowaura/xixunyunsign.svg)
 ![Version](https://img.shields.io/github/v/release/theshdowaura/xixunyunsign.svg)
 ![Build Status](https://github.com/theshdowaura/xixunyunsign/actions/workflows/release.yml/badge.svg)
 ![Run Status](https://github.com/theshdowaura/xixunyunsign/actions/workflows/test.yml/badge.svg)
 ![Docker Status](https://github.com/theshdowaura/xixunyunsign/actions/workflows/docker-publish.yml/badge.svg)
 
-
+## 快速上手
+[示例操作流程](#示例操作流程)
 
 ## 项目简介
 
@@ -354,6 +357,10 @@ go build -o xixunyunsign.exe
 ### v1.2.x.alpha
 
 - 实现周报月报，ai自动代写，图片上传
+
+### v1.3.0.alpha2
+- 新增web api调用，实现网页端一键在线多签。
+
 ---
 
 ## 开发计划
