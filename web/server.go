@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"log"
+	"time"
 )
 
 type Server struct {
@@ -13,15 +14,15 @@ type Server struct {
 func NewServer() *Server {
 	r := SetupRouter()
 
-	// 配置CORS中间件
+	// 配置CORS中间件，允许所有来源
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://sign.utc.edu.rs"},                 // 允许的来源
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},            // 允许的 HTTP 方法
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"}, // 允许的请求头
-		ExposeHeaders:    []string{"Content-Length"},                          // 可暴露的头部信息
-		AllowCredentials: true,                                                // 是否允许携带凭证
+		AllowOrigins:     []string{"*"}, // 允许所有来源
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
 	}))
-	// 你可以根据需求自定义CORS配置
 
 	return &Server{
 		Router: r,
