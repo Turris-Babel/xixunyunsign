@@ -1,46 +1,52 @@
+// cmd/query.go
 package cmd
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
+	"io"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/spf13/cobra"
 	"xixunyunsign/utils"
 )
 
 func init() {
-	QueryCmd.Flags().StringVarP(&account, "account", "a", "", "账号")
-	QueryCmd.MarkFlagRequired("account")
+	QueryCmd.Flags().StringVarP(&u.account, "account", "a", "", "账号")
+	err := QueryCmd.MarkFlagRequired("account")
+	if err != nil {
+		return
+	}
 }
 
 var QueryCmd = &cobra.Command{
 	Use:   "query",
 	Short: "查询签到信息",
 	Run: func(cmd *cobra.Command, args []string) {
-		querySignIn()
+		_, err := Query(u.account)
+		if err != nil {
+			return
+		}
 	},
 }
 
-func querySignIn() {
+// Query retrieves sign-in information for the given account.
+func Query(account string) (map[string]interface{}, error) {
 	token, _, _, err := utils.GetUser(account)
 	if err != nil || token == "" {
-		fmt.Println("未找到该账号的 token，请先登录。")
-		return
+		return nil, fmt.Errorf("未找到账号 %s 的 token", account)
 	}
+
 	userData, err := utils.GetAdditionalUserData(account)
 	if err != nil {
-		fmt.Println("获取用户额外信息失败:", err)
-		return
+		return nil, fmt.Errorf("获取用户额外信息失败: %v", err)
 	}
 
 	apiURL := "https://api.xixunyun.com/signin40/homepage"
 
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
-		fmt.Println("创建请求失败:", err)
-		return
+		return nil, fmt.Errorf("创建请求失败: %v", err)
 	}
 
 	query := req.URL.Query()
@@ -56,42 +62,39 @@ func querySignIn() {
 
 	req.Header.Set("User-Agent", "okhttp/3.8.0")
 	req.Header.Set("Accept-Encoding", "gzip")
-	//req.Header.Set("Cookie", "PHPSESSID=sjgggpe71m53qv1o9dor0uurg4")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("请求失败:", err)
-		return
+		return nil, fmt.Errorf("请求失败: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var result map[string]interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
-		fmt.Println("解析响应失败:", err)
-		return
+		return nil, fmt.Errorf("解析响应失败: %v", err)
 	}
 
 	code, ok := result["code"].(float64)
 	if !ok || code != 20000 {
 		message, _ := result["message"].(string)
-		fmt.Printf("查询失败: %s\n", message)
-		return
+		return nil, fmt.Errorf("查询失败: %s", message)
 	}
-
-	fmt.Println("查询成功！")
 
 	data, ok := result["data"].(map[string]interface{})
 	if !ok {
-		fmt.Println("解析数据失败：无效的响应结构")
-		return
+		return nil, fmt.Errorf("解析数据失败：无效的响应结构")
 	}
 
 	signResourcesInfo, ok := data["sign_resources_info"].(map[string]interface{})
 	if !ok {
-		fmt.Println("解析签到资源信息失败：无效的响应结构")
-		return
+		return nil, fmt.Errorf("解析签到资源信息失败：无效的响应结构")
 	}
 
 	midLatitude := fmt.Sprintf("%v", signResourcesInfo["mid_sign_latitude"])
@@ -100,9 +103,8 @@ func querySignIn() {
 	// 更新数据库中的经纬度信息
 	err = utils.UpdateCoordinates(account, midLatitude, midLongitude)
 	if err != nil {
-		fmt.Println("保存经纬度信息失败:", err)
-		return
+		return nil, fmt.Errorf("保存经纬度信息失败: %v", err)
 	}
 
-	fmt.Println("应签到位置的经纬度已更新。")
+	return data, nil
 }
