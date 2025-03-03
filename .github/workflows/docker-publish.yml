@@ -78,7 +78,7 @@ jobs:
           export PKG_CONFIG_PATH=${{ env.PKG_CONFIG_PATH }}
 
           # 去除调试信息，最小化二进制文件大小
-          go build -ldflags "-s -w" -trimpath -o xixunyunsign .
+          go build -ldflags "-s -w" -trimpath -o output/xixunyunsign .
 
       - name: Build and push Docker image
         id: build-and-push
