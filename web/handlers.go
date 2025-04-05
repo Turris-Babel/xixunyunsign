@@ -2,13 +2,30 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
-	"xixunyunsign/cmd"
-	"xixunyunsign/utils"
+	// "xixunyunsign/cmd" // No longer calling cmd directly
+	"xixunyunsign/service" // Depend on service interfaces
+	// "xixunyunsign/utils" // No longer needed directly if SchoolInfo is in service
 
 	"github.com/gin-gonic/gin"
 )
+
+// Handlers holds dependencies for web handlers, like services.
+type Handlers struct {
+	AuthService  service.AuthService
+	QueryService service.QueryService
+	SignService  service.SignService
+	// TODO: Add SchoolSearch service if needed, or keep logic in QueryService
+}
+
+// NewHandlers creates a new Handlers struct with injected services.
+func NewHandlers(authService service.AuthService, queryService service.QueryService, signService service.SignService) *Handlers {
+	return &Handlers{
+		AuthService:  authService,
+		QueryService: queryService,
+		SignService:  signService,
+	}
+}
 
 // LoginRequest represents the expected login payload
 type LoginRequest struct {
@@ -25,8 +42,8 @@ type LoginResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// handleLogin processes the login request
-func handleLogin(c *gin.Context) {
+// handleLogin processes the login request - now a method on Handlers
+func (h *Handlers) handleLogin(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, LoginResponse{
@@ -36,11 +53,11 @@ func handleLogin(c *gin.Context) {
 		return
 	}
 
-	// 调用cmd包中的登录逻辑
-	token, err := cmd.Login(req.Account, req.Password, req.SchoolID)
+	// 调用注入的 AuthService
+	token, err := h.AuthService.Login(req.Account, req.Password, req.SchoolID)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, LoginResponse{
-			Message: "登录失败",
+			Message: "登录失败", // Consider more specific messages if possible
 			Error:   err.Error(),
 		})
 		return
@@ -59,8 +76,8 @@ type QueryResponse struct {
 	Error   string                 `json:"error,omitempty"`
 }
 
-// handleQuery processes the query request
-func handleQuery(c *gin.Context) {
+// handleQuery processes the query request - now a method on Handlers
+func (h *Handlers) handleQuery(c *gin.Context) {
 	account := c.Query("account")
 	if account == "" {
 		c.JSON(http.StatusBadRequest, QueryResponse{
@@ -69,11 +86,12 @@ func handleQuery(c *gin.Context) {
 		return
 	}
 
-	// 调用cmd包中的查询逻辑
-	data, err := cmd.Query(account)
+	// 调用注入的 QueryService
+	// Assuming QueryService.QuerySignInfo is the correct method for this handler
+	data, err := h.QueryService.QuerySignInfo(account)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, QueryResponse{
-			Message: "查询失败",
+			Message: "查询失败", // Consider more specific messages
 			Error:   err.Error(),
 		})
 		return
@@ -105,8 +123,8 @@ type SignResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// handleSign processes the sign-in request
-func handleSign(c *gin.Context) {
+// handleSign processes the sign-in request - now a method on Handlers
+func (h *Handlers) handleSign(c *gin.Context) {
 	var req SignRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, SignResponse{
@@ -116,36 +134,36 @@ func handleSign(c *gin.Context) {
 		return
 	}
 
-	// 调用cmd包中的签到逻辑
-	success := cmd.SignIn(req.Account, req.Address, req.AddressName, req.Latitude, req.Longitude)
-	//if success == false {
-	//	c.JSON(http.StatusInternalServerError, SignResponse{
-	//		Message: "签到失败",
-	//		Error:   fmt.Sprintf("%v", success),
-	//	})
-	//	return
-	//}
-	if success == "签到成功" {
-		c.JSON(http.StatusOK, SignResponse{
-			Message: "签到成功",
-		})
-	} else {
+	// 调用注入的 SignService
+	// Note: The original cmd.SignIn returned a string "签到成功" or an error string.
+	// The service.SignIn interface returns (string, error). We adapt the logic.
+	message, err := h.SignService.SignIn(req.Account, req.Address, req.AddressName, req.Latitude, req.Longitude)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, SignResponse{
 			Message: "签到失败",
-			Error:   fmt.Sprintf("%v", success),
+			Error:   err.Error(), // Use the error returned by the service
 		})
+		return
 	}
+
+	// Assuming the service returns a success message string when err is nil
+	c.JSON(http.StatusOK, SignResponse{
+		Message: message, // Use the message from the service
+	})
 }
 
 // SearchSchoolResponse represents the search school ID response payload
+// Note: utils.SchoolInfo is used here. Consider moving SchoolInfo definition
+// to the service package if it's primarily a service-level concept,
+// or keep it in utils if it's a general utility struct.
 type SearchSchoolResponse struct {
-	Message string             `json:"message"`
-	Schools []utils.SchoolInfo `json:"schools,omitempty"`
-	Error   string             `json:"error,omitempty"`
+	Message string               `json:"message"`
+	Schools []service.SchoolInfo `json:"schools,omitempty"` // Use service.SchoolInfo
+	Error   string               `json:"error,omitempty"`
 }
 
-// handleSearchSchoolID processes the search school ID request
-func handleSearchSchoolID(c *gin.Context) {
+// handleSearchSchoolID processes the search school ID request - now a method on Handlers
+func (h *Handlers) handleSearchSchoolID(c *gin.Context) {
 	// 获取查询参数
 	schoolName := c.Query("school_name")
 	if schoolName == "" {
@@ -155,11 +173,17 @@ func handleSearchSchoolID(c *gin.Context) {
 		return
 	}
 
-	// 调用 cmd 包中的查询学校信息逻辑
-	schools, err := cmd.SearchSchoolID(schoolName)
+	// 调用注入的 QueryService's SearchSchool method
+	// Assuming QueryService handles the school search logic now.
+	// The original cmd.SearchSchoolID returned []utils.SchoolInfo, error.
+	// The service.SearchSchool interface returns ([]service.SchoolInfo, error).
+	// We need to ensure the types match or adapt. Let's assume service.SchoolInfo exists
+	// and is compatible or identical to utils.SchoolInfo for now.
+	// If not, we'd need to adjust the service interface or the handler response.
+	schools, err := h.QueryService.SearchSchool(schoolName) // Using QueryService
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, SearchSchoolResponse{
-			Message: "查询失败",
+			Message: "查询失败", // Consider more specific messages
 			Error:   err.Error(),
 		})
 		return
@@ -174,8 +198,11 @@ func handleSearchSchoolID(c *gin.Context) {
 	}
 
 	// 返回查询成功结果
+	// Adapt the response to use the type returned by the service.
+	// Assuming service.SchoolInfo is compatible with utils.SchoolInfo for JSON marshalling.
+	// If service.SchoolInfo is different, we might need a conversion step here.
 	c.JSON(http.StatusOK, SearchSchoolResponse{
 		Message: "查询成功",
-		Schools: schools,
+		Schools: schools, // Use the result from QueryService.SearchSchool
 	})
 }

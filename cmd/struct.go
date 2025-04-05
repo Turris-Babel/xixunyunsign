@@ -29,6 +29,9 @@ type UserInfo struct {
 	token    string
 }
 
+// Global variable to hold user info flags, shared across commands.
+var u UserInfo
+
 type signconfig struct {
 	address      string
 	address_name string

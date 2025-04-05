@@ -5,7 +5,8 @@ import (
 	"log"
 	"strconv"
 	"xixunyunsign/cmd"
-	"xixunyunsign/web"
+	"xixunyunsign/internal/wire" // Import the wire package
+	// "xixunyunsign/web" // No longer needed directly here
 )
 
 func main() {
@@ -21,7 +22,11 @@ func main() {
 			if port == 0 {
 				port = 8080
 			}
-			server := web.NewServer()
+			// Initialize server using wire injector
+			server, err := wire.InitializeServer()
+			if err != nil {
+				log.Fatalf("无法初始化服务器: %v", err)
+			}
 			// 启动服务器，传递可变端口
 			server.Run(":" + strconv.Itoa(port)) // 可以通过参数指定端口
 		},
