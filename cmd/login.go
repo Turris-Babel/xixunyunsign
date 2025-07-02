@@ -16,6 +16,7 @@ import (
 // This function will be called by the runner created by wire.
 // The runner type is now wire.LoginCmdRunner.
 func RunLogin(runner *wire.LoginCmdRunner, account, password, schoolID string) {
+	log.Printf("Account: %s, Password: %s, SchoolID: %s\n", account, password, schoolID)
 	token, err := runner.AuthService.Login(account, password, schoolID)
 	if err != nil {
 		log.Printf("登录失败: %v\n", err) // Log error
