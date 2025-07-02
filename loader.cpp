@@ -1,5 +1,29 @@
 #include <windows.h>
 #include <iostream>
+#include <string>
+
+// Helper function to convert from the console's ANSI code page to UTF-8
+std::string AnsiToUtf8(const char* ansiStr) {
+    int wideCharLen = MultiByteToWideChar(CP_ACP, 0, ansiStr, -1, NULL, 0);
+    if (wideCharLen == 0) {
+        return "";
+    }
+    wchar_t* wideCharStr = new wchar_t[wideCharLen];
+    MultiByteToWideChar(CP_ACP, 0, ansiStr, -1, wideCharStr, wideCharLen);
+
+    int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideCharStr, -1, NULL, 0, NULL, NULL);
+    if (utf8Len == 0) {
+        delete[] wideCharStr;
+        return "";
+    }
+    char* utf8Str = new char[utf8Len];
+    WideCharToMultiByte(CP_UTF8, 0, wideCharStr, -1, utf8Str, utf8Len, NULL, NULL);
+
+    std::string result(utf8Str);
+    delete[] wideCharStr;
+    delete[] utf8Str;
+    return result;
+}
 
 // 定义 DLL 中导出的函数类型
 typedef void (*RunCommandFunc)(const char*);
@@ -23,7 +47,8 @@ int main(int argc, char* argv[]) {
     // 拼接命令行参数
     std::string args_str;
     for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
+        // Convert argument from ANSI to UTF-8
+        std::string arg = AnsiToUtf8(argv[i]);
         // 如果参数包含空格，则用双引号括起来
         if (arg.find(' ') != std::string::npos) {
             args_str += "\"" + arg + "\"";
