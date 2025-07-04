@@ -1,90 +1,86 @@
-name: Release
-
-on:
-  workflow_dispatch: # 手动触发
-  push:
-    tags:
-      - 'v*.*.*' # 当推送符合版本模式的标签时触发
-    paths-ignore:
-      - '**/*.md' # 忽略 Markdown 文件的变更
-
-jobs:
-
-  build-and-release:
+name: Release  
+  
+on:  
+  workflow_dispatch: # 手动触发  
+  push:  
+    tags:  
+      - 'v*.*.*' # 当推送符合版本模式的标签时触发  
+    paths-ignore:  
+      - '**/*.md' # 忽略 Markdown 文件的变更  
+  
+jobs:  
+  build-and-release:  
     if: "!contains(github.ref, '.beta')" # 排除包含 .beta 的标签
-    runs-on: ubuntu-latest
-    steps:
-      # 1. 检出代码，获取完整的 Git 历史记录
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      # 2. 设置 Go 版本为 1.22
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.22'
-
-      # 3. 安装依赖，包括交叉编译器和动态库
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf gcc-arm-linux-gnueabi libssl-dev libcurl4-openssl-dev pkg-config
-
-      # 4. 设置动态库路径，确保 ARM64 和 ARMv7 架构的库可以找到
-      - name: Set LD_LIBRARY_PATH
-        run: |
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/libs:/usr/lib/aarch64-linux-gnu:/usr/lib/arm-linux-gnueabihf
-          echo "LD_LIBRARY_PATH set to $LD_LIBRARY_PATH"
-        shell: bash
-
-      # 5. 列出所有 ARM GCC 编译器以进行诊断
-      - name: List ARM GCC Compilers
-        run: |
-          echo "Listing all arm-linux-gnueabihf-gcc* and arm-linux-gnueabi-gcc* in /usr/bin:"
-          ls -l /usr/bin/arm-linux-gnueabihf-gcc*
-          ls -l /usr/bin/arm-linux-gnueabi-gcc*
-          echo "File details:"
-          file /usr/bin/arm-linux-gnueabihf-gcc*
-          file /usr/bin/arm-linux-gnueabi-gcc*
-
-      # 6. 验证 ARMv7 和 ARMv5 编译器是否可用
-      - name: Verify Cross Compilers
-        run: |
-          which arm-linux-gnueabihf-gcc arm-linux-gnueabi-gcc
-          arm-linux-gnueabihf-gcc --version
-          arm-linux-gnueabi-gcc --version
-
-      # 7. 设置 GoReleaser 环境变量并启用 cgo
-      - name: Set CGO Environment
-        run: |
-          export CGO_ENABLED=1
-          export GOARCH=arm64
-          export GOOS=linux
-          export CC=aarch64-linux-gnu-gcc  # ARM64 编译器
-          export CXX=aarch64-linux-gnu-g++ # ARM64 C++ 编译器
-          echo "CGO_ENABLED=$CGO_ENABLED, GOARCH=$GOARCH, GOOS=$GOOS, CC=$CC"
-
-      # 8. 运行 GoReleaser
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          version: latest # 安装最新版本的 GoReleaser
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.XXY_TOKEN }}
-          # 设置特定架构的 C 编译器
-          CC_LINUX_ARM_V7: arm-linux-gnueabihf-gcc
-          CC_LINUX_ARM_V5: arm-linux-gnueabi-gcc
-          CC_LINUX_ARM64: aarch64-linux-gnu-gcc
-          LD_LIBRARY_PATH: /opt/libs:/usr/lib/aarch64-linux-gnu:/usr/lib/arm-linux-gnueabihf # 确保 GoReleaser 可以找到动态库路径
-
-      # 9. 运行后验证 ARMv7 和 ARM64 动态库依赖是否正确加载
-      - name: Check ARMv7 Dynamic Dependencies
-        run: |
-          ldd ./xixunyunsign_armv7 || echo "No ARMv7 dynamic dependencies found"
-
-      - name: Check ARM64 Dynamic Dependencies
-        run: |
-          ldd ./xixunyunsign_arm64 || echo "No ARM64 dynamic dependencies found"
+    runs-on: ubuntu-latest  
+    steps:  
+      # 1. 检出代码，获取完整的 Git 历史记录  
+      - name: Checkout  
+        uses: actions/checkout@v4  # 更新到最新版本  
+        with:  
+          fetch-depth: 0  
+  
+      # 2. 设置 Go 版本为 1.22  
+      - name: Set up Go  
+        uses: actions/setup-go@v5  # 更新到最新版本  
+        with:  
+          go-version: '1.22'  
+  
+      # 3. 安装完整的交叉编译工具链  
+      - name: Install Cross-Compilation Toolchains  
+        run: |  
+          sudo apt-get update  
+          sudo apt-get install -y \  
+            build-essential \  
+            gcc-x86-64-linux-gnu \  
+            g++-x86-64-linux-gnu \  
+            gcc-aarch64-linux-gnu \  
+            g++-aarch64-linux-gnu \  
+            gcc-arm-linux-gnueabihf \  
+            g++-arm-linux-gnueabihf \  
+            gcc-arm-linux-gnueabi \  
+            g++-arm-linux-gnueabi \  
+            libssl-dev \  
+            libcurl4-openssl-dev \  
+            pkg-config  
+  
+      # 4. 验证交叉编译器安装  
+      - name: Verify Cross Compilers  
+        run: |  
+          echo "=== Verifying installed compilers ==="  
+          which gcc g++ || echo "Native compilers not found"  
+          which x86_64-linux-gnu-gcc x86_64-linux-gnu-g++ || echo "x86_64 compilers not found"  
+          which aarch64-linux-gnu-gcc aarch64-linux-gnu-g++ || echo "aarch64 compilers not found"  
+          which arm-linux-gnueabihf-gcc arm-linux-gnueabihf-g++ || echo "armhf compilers not found"  
+          which arm-linux-gnueabi-gcc arm-linux-gnueabi-g++ || echo "armel compilers not found"  
+            
+          echo "=== Compiler versions ==="  
+          aarch64-linux-gnu-gcc --version | head -1  
+          arm-linux-gnueabihf-gcc --version | head -1  
+          arm-linux-gnueabi-gcc --version | head -1  
+  
+      # 5. 运行 GoReleaser  
+      - name: Run GoReleaser  
+        uses: goreleaser/goreleaser-action@v4  
+        with:  
+          version: latest  
+          args: release --clean  
+        env:  
+          GITHUB_TOKEN: ${{ secrets.XXY_TOKEN }}  
+          # 设置动态库路径  
+          LD_LIBRARY_PATH: /opt/libs:/usr/lib/aarch64-linux-gnu:/usr/lib/arm-linux-gnueabihf  
+          # 这些环境变量实际上不会被 GoReleaser 使用，因为它使用配置文件中的 CC/CXX 设置  
+          CC_LINUX_ARM_V7: arm-linux-gnueabihf-gcc  
+          CC_LINUX_ARM_V5: arm-linux-gnueabi-gcc  
+          CC_LINUX_ARM64: aarch64-linux-gnu-gcc  
+  
+      # 6. 验证构建产物（可选）  
+      - name: Verify Build Artifacts  
+        run: |  
+          echo "=== Listing dist directory ==="  
+          find dist/ -name "*.tar.gz" -o -name "*.zip" | head -10  
+            
+          echo "=== Checking for shared libraries ==="  
+          find dist/ -name "*.so" -o -name "*.dll" | head -5  
+            
+          echo "=== Checking for header files ==="  
+          find dist/ -name "*.h" | head -5
