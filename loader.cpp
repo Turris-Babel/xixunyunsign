@@ -1,3 +1,5 @@
+//go:build windows
+// +build windows
 #include <windows.h>
 #include <iostream>
 #include <string>
