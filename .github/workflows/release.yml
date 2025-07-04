@@ -25,22 +25,14 @@ jobs:
         with:  
           go-version: '1.22'  
   
-      # 3. 缓存 apt 包和安装完整的交叉编译工具链  
-      - name: Cache apt packages  
-        uses: actions/cache@v4  
-        with:  
-          path: |  
-            /var/cache/apt/archives  
-            /var/lib/apt/lists  
-          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/release.yml') }}  
-  
+      # 3. 安装完整的交叉编译工具链  
       - name: Install Cross-Compilation Toolchains  
         run: |  
           sudo apt-get update  
           sudo apt-get install -y \  
             build-essential \  
-            gcc-x86-64-linux-gnu \  
-            g++-x86-64-linux-gnu \  
+            gcc \  
+            g++ \  
             gcc-aarch64-linux-gnu \  
             g++-aarch64-linux-gnu \  
             gcc-arm-linux-gnueabihf \  
@@ -49,7 +41,7 @@ jobs:
             g++-arm-linux-gnueabi \  
             libssl-dev \  
             libcurl4-openssl-dev \  
-            pkg-config  
+            pkg-config
   
       # 4. 验证交叉编译器安装  
       - name: Verify Cross Compilers  
