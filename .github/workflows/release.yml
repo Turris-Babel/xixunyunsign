@@ -37,7 +37,7 @@ jobs:
             gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
             gcc-arm-linux-gnueabi g++-arm-linux-gnueabi \
-            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \  # <— 新增，提供 x86_64-w64-mingw32-gcc/g++
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
             libssl-dev libcurl4-openssl-dev pkg-config
 
 
