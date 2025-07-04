@@ -1,274 +1,319 @@
-# .goreleaser.yaml
-version: 2
-
-#######################################################
-# 1. BUILD 阶段
-#######################################################
-builds:
-  #####################################################
-  # ----- 可执行文件（保持原来 5 个） -------------------
-  #####################################################
-  - id: linux-amd64-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [amd64]
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-linux-gnu-gcc
-      - CXX=x86_64-linux-gnu-g++
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
-      - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/lib/pkgconfig:/sysroot/linux/amd64/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  - id: linux-arm64-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [arm64]
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64
-      - PKG_CONFIG_PATH=/sysroot/linux/arm64/usr/lib/pkgconfig:/sysroot/linux/arm64/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  - id: linux-armhf-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [arm]
-    goarm:  [7]
-    env:
-      - CGO_ENABLED=1
-      - CC=arm-linux-gnueabihf-gcc
-      - CXX=arm-linux-gnueabihf-g++
-      - CGO_CFLAGS=--sysroot=/sysroot/linux/armhf
-      - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
-      - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  - id: linux-armv5-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [arm]
-    goarm:  [5]
-    env:
-      - CGO_ENABLED=1
-      - GOARM=5
-      - CC=arm-linux-gnueabi-gcc
-      - CXX=arm-linux-gnueabi-g++
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armv5
-      - PKG_CONFIG_PATH=/sysroot/linux/armv5/usr/lib/pkgconfig:/sysroot/linux/armv5/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  - id: linux-armv5-static-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [arm]
-    goarm:  [5]
-    env:
-      - CGO_ENABLED=1
-      - GOARM=5
-      - CC=arm-linux-gnueabi-gcc
-      - CXX=arm-linux-gnueabi-g++
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armv5
-      - PKG_CONFIG_PATH=/sysroot/linux/armv5/usr/lib/pkgconfig:/sysroot/linux/armv5/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  #####################################################
-  # ----- 共享库（为每个平台再建一个） ------------------
-  #####################################################
-  - id: linux-amd64-lib-v1
-    main: ./
-    binary: xixunyunsign            # goreleaser 会自动补 .so
-    goos:   [linux]
-    goarch: [amd64]
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-linux-gnu-gcc
-      - CXX=x86_64-linux-gnu-g++
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64
-      - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/lib/pkgconfig:/sysroot/linux/amd64/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly -buildmode=c-shared]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  - id: linux-arm64-lib-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [arm64]
-    env:
-      - CGO_ENABLED=1
-      - CC=aarch64-linux-gnu-gcc
-      - CXX=aarch64-linux-gnu-g++
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64
-      - PKG_CONFIG_PATH=/sysroot/linux/arm64/usr/lib/pkgconfig:/sysroot/linux/arm64/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly -buildmode=c-shared]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  - id: linux-armhf-lib-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [arm]
-    goarm:  [7]
-    env:
-      - CGO_ENABLED=1
-      - CC=arm-linux-gnueabihf-gcc
-      - CXX=arm-linux-gnueabihf-g++
-      - CGO_CFLAGS=--sysroot=/sysroot/linux/armhf
-      - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf
-      - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly -buildmode=c-shared]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  - id: linux-armv5-lib-v1
-    main: ./
-    binary: xixunyunsign
-    goos:   [linux]
-    goarch: [arm]
-    goarm:  [5]
-    env:
-      - CGO_ENABLED=1
-      - GOARM=5
-      - CC=arm-linux-gnueabi-gcc
-      - CXX=arm-linux-gnueabi-g++
-      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armv5
-      - PKG_CONFIG_PATH=/sysroot/linux/armv5/usr/lib/pkgconfig:/sysroot/linux/armv5/usr/local/lib/pkgconfig
-    flags:  [-mod=readonly -buildmode=c-shared]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-  # Windows-amd64 共享库（示例，编译 .dll）
-  - id: windows-amd64-lib-v1
-    main: ./
-    binary: xixunyunsign            # goreleaser 会自动补 .dll
-    goos:   [windows]
-    goarch: [amd64]
-    env:
-      - CGO_ENABLED=1
-      - CC=x86_64-w64-mingw32-gcc
-      - CXX=x86_64-w64-mingw32-g++
-    flags:  [-mod=readonly -buildmode=c-shared]
-    ldflags: [-s -w -X main.version={{.Version}}]
-
-#######################################################
-# 2. UPX 压缩段
-#######################################################
-upx:
-  - enabled: true
-    ids:
-      # 所有可执行 + 共享库 ID
-      - linux-amd64-v1
-      - linux-arm64-v1
-      - linux-armhf-v1
-      - linux-armv5-v1
-      - linux-armv5-static-v1
-      - linux-amd64-lib-v1
-      - linux-arm64-lib-v1
-      - linux-armhf-lib-v1
-      - linux-armv5-lib-v1
-      - windows-amd64-lib-v1
-    goos: [linux, windows]      # 只压 Linux ELF & Windows PE
-    compress: best              # 相当于 -9
-    lzma: true                  # 用 LZMA 算法
-    brute: false
-
-#######################################################
-# 3. 归档（可执行 + 共享库分别打包）
-#######################################################
-archives:
-  # -------------- 可执行 ------------------------------
-  - id: linux-amd64-archive-v1
-    builds: [linux-amd64-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_amd64"
-    format: zip
-    wrap_in_directory: true
-
-  - id: linux-arm64-archive-v1
-    builds: [linux-arm64-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_arm64"
-    format: zip
-    wrap_in_directory: true
-
-  - id: linux-armhf-archive-v1
-    builds: [linux-armhf-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_armhf"
-    format: zip
-    wrap_in_directory: true
-
-  - id: linux-armv5-archive-v1
-    builds: [linux-armv5-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_armv5"
-    format: zip
-    wrap_in_directory: true
-
-  - id: linux-armv5-static-archive-v1
-    builds: [linux-armv5-static-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_armv5_static"
-    format: zip
-    wrap_in_directory: true
-
-  # -------------- 共享库 ------------------------------
-  - id: linux-amd64-lib-archive-v1
-    builds: [linux-amd64-lib-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_amd64_shared"
-    format: zip
-    wrap_in_directory: true
-
-  - id: linux-arm64-lib-archive-v1
-    builds: [linux-arm64-lib-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_arm64_shared"
-    format: zip
-    wrap_in_directory: true
-
-  - id: linux-armhf-lib-archive-v1
-    builds: [linux-armhf-lib-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_armhf_shared"
-    format: zip
-    wrap_in_directory: true
-
-  - id: linux-armv5-lib-archive-v1
-    builds: [linux-armv5-lib-v1]
-    name_template: "xixunyunsign_{{ .Version }}_linux_armv5_shared"
-    format: zip
-    wrap_in_directory: true
-
-  - id: windows-amd64-lib-archive-v1
-    builds: [windows-amd64-lib-v1]
-    name_template: "xixunyunsign_{{ .Version }}_windows_amd64_shared"
-    format: zip
-    wrap_in_directory: true
-
-#######################################################
-# 4. 其他保持不变
-#######################################################
-checksum:
-  name_template: "checksums.txt"
-
-snapshot:
-  name_template: "{{ .Tag }}"
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-
-release:
-  github:
-    owner: theshdowaura
-    name: xixunyunsign
-  prerelease: auto
+# .goreleaser.yaml  
+version: 2  
+  
+#######################################################  
+# 1. BUILD 阶段  
+#######################################################  
+builds:  
+  #####################################################  
+  # ----- 可执行文件（保持原来 5 个） -------------------  
+  #####################################################  
+  - id: linux-amd64-v1  
+    main: ./  
+    binary: xixunyunsign  
+    goos: [linux]  
+    goarch: [amd64]  
+    env:  
+      - CGO_ENABLED=1  
+      - CC=x86_64-linux-gnu-gcc  
+      - CXX=x86_64-linux-gnu-g++  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64  
+      - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/lib/pkgconfig:/sysroot/linux/amd64/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  - id: linux-arm64-v1  
+    main: ./  
+    binary: xixunyunsign  
+    goos: [linux]  
+    goarch: [arm64]  
+    env:  
+      - CGO_ENABLED=1  
+      - CC=aarch64-linux-gnu-gcc  
+      - CXX=aarch64-linux-gnu-g++  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64  
+      - PKG_CONFIG_PATH=/sysroot/linux/arm64/usr/lib/pkgconfig:/sysroot/linux/arm64/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  - id: linux-armhf-v1  
+    main: ./  
+    binary: xixunyunsign  
+    goos: [linux]  
+    goarch: [arm]  
+    goarm: [7]  
+    env:  
+      - CGO_ENABLED=1  
+      - CC=arm-linux-gnueabihf-gcc  
+      - CXX=arm-linux-gnueabihf-g++  
+      - CGO_CFLAGS=--sysroot=/sysroot/linux/armhf  
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf  
+      - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  - id: linux-armv5-v1  
+    main: ./  
+    binary: xixunyunsign  
+    goos: [linux]  
+    goarch: [arm]  
+    goarm: [5]  
+    env:  
+      - CGO_ENABLED=1  
+      - GOARM=5  
+      - CC=arm-linux-gnueabi-gcc  
+      - CXX=arm-linux-gnueabi-g++  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armv5  
+      - PKG_CONFIG_PATH=/sysroot/linux/armv5/usr/lib/pkgconfig:/sysroot/linux/armv5/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  - id: linux-armv5-static-v1  
+    main: ./  
+    binary: xixunyunsign  
+    goos: [linux]  
+    goarch: [arm]  
+    goarm: [5]  
+    env:  
+      - CGO_ENABLED=1  
+      - GOARM=5  
+      - CC=arm-linux-gnueabi-gcc  
+      - CXX=arm-linux-gnueabi-g++  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armv5  
+      - PKG_CONFIG_PATH=/sysroot/linux/armv5/usr/lib/pkgconfig:/sysroot/linux/armv5/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  #####################################################  
+  # ----- 共享库（为每个平台再建一个） ------------------  
+  #####################################################  
+  - id: linux-amd64-lib-v1  
+    main: ./  
+    binary: xixunyunsign  
+    buildmode: c-shared  
+    goos: [linux]  
+    goarch: [amd64]  
+    env:  
+      - CGO_ENABLED=1  
+      - CC=x86_64-linux-gnu-gcc  
+      - CXX=x86_64-linux-gnu-g++  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/amd64  
+      - PKG_CONFIG_PATH=/sysroot/linux/amd64/usr/lib/pkgconfig:/sysroot/linux/amd64/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  - id: linux-arm64-lib-v1  
+    main: ./  
+    binary: xixunyunsign  
+    buildmode: c-shared  
+    goos: [linux]  
+    goarch: [arm64]  
+    env:  
+      - CGO_ENABLED=1  
+      - CC=aarch64-linux-gnu-gcc  
+      - CXX=aarch64-linux-gnu-g++  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/arm64  
+      - PKG_CONFIG_PATH=/sysroot/linux/arm64/usr/lib/pkgconfig:/sysroot/linux/arm64/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  - id: linux-armhf-lib-v1  
+    main: ./  
+    binary: xixunyunsign  
+    buildmode: c-shared  
+    goos: [linux]  
+    goarch: [arm]  
+    goarm: [7]  
+    env:  
+      - CGO_ENABLED=1  
+      - CC=arm-linux-gnueabihf-gcc  
+      - CXX=arm-linux-gnueabihf-g++  
+      - CGO_CFLAGS=--sysroot=/sysroot/linux/armhf  
+      - CGO_LDFLAGS=--sysroot=/sysroot/linux/armhf  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armhf  
+      - PKG_CONFIG_PATH=/sysroot/linux/armhf/opt/vc/lib/pkgconfig:/sysroot/linux/armhf/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/linux/armhf/usr/lib/pkgconfig:/sysroot/linux/armhf/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  - id: linux-armv5-lib-v1  
+    main: ./  
+    binary: xixunyunsign  
+    buildmode: c-shared  
+    goos: [linux]  
+    goarch: [arm]  
+    goarm: [5]  
+    env:  
+      - CGO_ENABLED=1  
+      - GOARM=5  
+      - CC=arm-linux-gnueabi-gcc  
+      - CXX=arm-linux-gnueabi-g++  
+      - PKG_CONFIG_SYSROOT_DIR=/sysroot/linux/armv5  
+      - PKG_CONFIG_PATH=/sysroot/linux/armv5/usr/lib/pkgconfig:/sysroot/linux/armv5/usr/local/lib/pkgconfig  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+  # Windows-amd64 共享库（示例，编译 .dll）  
+  - id: windows-amd64-lib-v1  
+    main: ./  
+    binary: xixunyunsign  
+    buildmode: c-shared  
+    goos: [windows]  
+    goarch: [amd64]  
+    env:  
+      - CGO_ENABLED=1  
+      - CC=x86_64-w64-mingw32-gcc  
+      - CXX=x86_64-w64-mingw32-g++  
+    flags:  
+      - -mod=readonly  
+    ldflags:  
+      - -s  
+      - -w  
+      - -X main.version={{.Version}}  
+  
+#######################################################  
+# 2. UPX 压缩段  
+#######################################################  
+upx:  
+  - enabled: true  
+    ids:  
+      # 所有可执行 + 共享库 ID  
+      - linux-amd64-v1  
+      - linux-arm64-v1  
+      - linux-armhf-v1  
+      - linux-armv5-v1  
+      - linux-armv5-static-v1  
+      - linux-amd64-lib-v1  
+      - linux-arm64-lib-v1  
+      - linux-armhf-lib-v1  
+      - linux-armv5-lib-v1  
+      - windows-amd64-lib-v1  
+    goos: [linux, windows]      # 只压 Linux ELF & Windows PE  
+    compress: best              # 相当于 -9  
+    lzma: true                  # 用 LZMA 算法  
+    brute: false  
+  
+#######################################################  
+# 3. 归档（可执行 + 共享库分别打包）  
+#######################################################  
+archives:  
+  # -------------- 可执行 ------------------------------  
+  - id: linux-amd64-archive-v1  
+    builds: [linux-amd64-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_amd64"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: linux-arm64-archive-v1  
+    builds: [linux-arm64-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_arm64"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: linux-armhf-archive-v1  
+    builds: [linux-armhf-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_armhf"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: linux-armv5-archive-v1  
+    builds: [linux-armv5-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_armv5"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: linux-armv5-static-archive-v1  
+    builds: [linux-armv5-static-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_armv5_static"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  # -------------- 共享库 ------------------------------  
+  - id: linux-amd64-lib-archive-v1  
+    builds: [linux-amd64-lib-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_amd64_shared"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: linux-arm64-lib-archive-v1  
+    builds: [linux-arm64-lib-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_arm64_shared"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: linux-armhf-lib-archive-v1  
+    builds: [linux-armhf-lib-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_armhf_shared"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: linux-armv5-lib-archive-v1  
+    builds: [linux-armv5-lib-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_linux_armv5_shared"  
+    format: zip  
+    wrap_in_directory: true  
+  
+  - id: windows-amd64-lib-archive-v1  
+    builds: [windows-amd64-lib-v1]  
+    name_template: "xixunyunsign_{{ .Version }}_windows_amd64_shared"  
+    format: zip  
+    wrap_in_directory: true  
+  
+#######################################################  
+# 4. 其他保持不变  
+#######################################################  
+checksum:  
+  name_template: "checksums.txt"  
+  
+snapshot:  
+  name_template: "{{ .Tag }}"  
+  
+changelog:  
+  sort: asc  
+  filters:  
+    exclude:  
+      - '^docs:'  
+      - '^test:'  
+  
+release:  
+  github:  
+    owner: theshdowaura  
+    name: xixunyunsign  
+  prerelease: auto  
   draft: false
